@@ -37,7 +37,7 @@ jobs:
     - name: Build and push Docker image
       run: |
         gcloud auth configure-docker
-        docker build -t gcr.io/$PROJECT_ID/ai-agent-processor:${{ github.sha }} .
+        docker build -f src/agents/Dockerfile -t gcr.io/$PROJECT_ID/ai-agent-processor:${{ github.sha }} .
         docker push gcr.io/$PROJECT_ID/ai-agent-processor:${{ github.sha }}
 
     - name: Setup Terraform
