@@ -35,10 +35,12 @@ jobs:
         export_default_credentials: true
 
     - name: Build and push Docker image
+      env:
+        REGION: europe-west2  # replace with your region
       run: |
-        gcloud auth configure-docker
-        docker build -f src/agents/Dockerfile -t gcr.io/$PROJECT_ID/ai-agent-processor:${{ github.sha }} .
-        docker push gcr.io/$PROJECT_ID/ai-agent-processor:${{ github.sha }}
+        gcloud auth configure-docker europe-west2-docker.pkg.dev
+        docker build -f src/agents/Dockerfile -t ${REGION}-docker.pkg.dev/$PROJECT_ID/ai-agent-processor/ai-agent-processor:${{ github.sha }} .
+        docker push ${REGION}-docker.pkg.dev/$PROJECT_ID/ai-agent-processor/ai-agent-processor:${{ github.sha }}   
 
     - name: Setup Terraform
       uses: hashicorp/setup-terraform@v1
@@ -49,7 +51,8 @@ jobs:
     - name: Terraform Plan
       run: |
         terraform plan -var="project_id=$PROJECT_ID" \
-                       -var="ai_agent_processor_image=gcr.io/$PROJECT_ID/ai-agent-processor:${{ github.sha }}" \
+                       -var="region=${{ env.REGION }}" \
+                       -var="image_tag=${{ github.sha }}" \
                        -out=tfplan
 
     - name: Terraform Apply

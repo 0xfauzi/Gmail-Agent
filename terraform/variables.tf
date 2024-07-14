@@ -23,3 +23,8 @@ variable "watcher_service_account_id" {
   description = "Service account ID for the gmail watcher"
   type = string
 }
+
+variable "image_tag" {
+  description = "The tag of the AI Agent Processor image to deploy"
+  type        = string
+}

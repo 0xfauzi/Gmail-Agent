@@ -180,7 +180,7 @@ resource "google_cloud_run_service" "ai_agent_processor" {
   template {
     spec {
       containers {
-        image = var.ai_agent_processor_image
+        image = "${var.region}-docker.pkg.dev/${var.project_id}/ai-agent-processor/ai-agent-processor:${var.image_tag}"
         env {
           name  = "PROJECT_ID"
           value = var.project_id
