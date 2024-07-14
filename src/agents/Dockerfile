@@ -1,0 +1,22 @@
+# Use the official Python image
+FROM python:3.9-slim
+
+# Set the working directory in the container
+WORKDIR /app
+
+# Copy the current directory contents into the container at /app
+COPY . /app
+
+# Install any needed packages specified in requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Make port 8080 available to the world outside this container
+EXPOSE 8080
+
+# Define environment variables
+ENV PORT 8080
+ENV PROJECT_ID research-assistant-424819
+ENV SERVICE_ACCOUNT_SECRET_ID email_updates_secret
+
+# Run app.py when the container launches
+CMD ["python", "app.py"]

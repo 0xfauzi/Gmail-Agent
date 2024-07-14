@@ -1,0 +1,57 @@
+name: CI/CD
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.9'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Set up Cloud SDK
+      uses: google-github-actions/setup-gcloud@v0.2.0
+      with:
+        project_id: ${{ env.PROJECT_ID }}
+        service_account_key: ${{ env.GCP_SA_KEY }}
+        export_default_credentials: true
+
+    - name: Build and push Docker image
+      run: |
+        gcloud auth configure-docker
+        docker build -t gcr.io/$PROJECT_ID/ai-agent-processor:${{ github.sha }} .
+        docker push gcr.io/$PROJECT_ID/ai-agent-processor:${{ github.sha }}
+
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v1
+
+    - name: Terraform Init
+      run: terraform init
+
+    - name: Terraform Plan
+      run: |
+        terraform plan -var="project_id=$PROJECT_ID" \
+                       -var="ai_agent_processor_image=gcr.io/$PROJECT_ID/ai-agent-processor:${{ github.sha }}" \
+                       -out=tfplan
+
+    - name: Terraform Apply
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      run: terraform apply -auto-approve tfplan
