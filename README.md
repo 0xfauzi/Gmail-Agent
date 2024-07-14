@@ -76,7 +76,7 @@ To run the AI Agent Processor locally:
 1. Set up environment variables:
    ```
    export PROJECT_ID=your-project-id
-   export SERVICE_ACCOUNT_SECRET_ID=email_updates_secret
+   export SERVICE_ACCOUNT_SECRET_ID=service-account-secret-id
    ```
 2. Run the Flask app:
    ```
