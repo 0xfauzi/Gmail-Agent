@@ -9,7 +9,6 @@ on:
 env:
   PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
   GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
-  GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
   REGION: europe-west2
 
 jobs:
