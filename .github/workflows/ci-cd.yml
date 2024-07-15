@@ -27,21 +27,23 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install -r src/gmail_watcher/requirements.txt
+        pip install -r src/agents/requirements.txt
 
     - name: Set up Cloud SDK
-      uses: google-github-actions/setup-gcloud@v0.2.0
+      uses: google-github-actions/setup-gcloud@v1
       with:
         project_id: ${{ env.PROJECT_ID }}
         service_account_key: ${{ env.GCP_SA_KEY }}
-        export_default_credentials: true
+
+    - name: Configure gcloud CLI
+      run: |
+        gcloud config set project ${{ env.PROJECT_ID }}
+        gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev
 
     - name: Build and push Docker image
-      env:
-        REGION: europe-west2  # replace with your region
       run: |
-        gcloud auth configure-docker europe-west2-docker.pkg.dev
-        docker build -f src/agents/Dockerfile -t ${REGION}-docker.pkg.dev/$PROJECT_ID/ai-agent-processor/ai-agent-processor:${{ github.sha }} .
-        docker push ${REGION}-docker.pkg.dev/$PROJECT_ID/ai-agent-processor/ai-agent-processor:${{ github.sha }}   
+        docker build -f src/agents/Dockerfile -t ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/ai-agent-processor/ai-agent-processor:${{ github.sha }} .
+        docker push ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/ai-agent-processor/ai-agent-processor:${{ github.sha }}   
 
     - name: Setup Terraform
       uses: hashicorp/setup-terraform@v1
@@ -54,11 +56,13 @@ jobs:
     - name: Terraform Plan
       run: |
         cd terraform
-        terraform plan -var="project_id=$PROJECT_ID" \
+        terraform plan -var="project_id=${{ env.PROJECT_ID }}" \
                        -var="region=${{ env.REGION }}" \
                        -var="image_tag=${{ github.sha }}" \
                        -out=tfplan
 
     - name: Terraform Apply
       if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-      run: terraform apply -auto-approve tfplan
+      run: |
+        cd terraform
+        terraform apply -auto-approve tfplan
