@@ -1,5 +1,5 @@
 output "gmail_watcher_function_name" {
-  value       = google_cloudfunctions_function_v2.gmail_watcher.name
+  value       = google_cloudfunctions2_function.gmail_watcher.name
   description = "The name of the deployed Gmail Watcher Cloud Function"
 }
 
@@ -14,11 +14,11 @@ output "service_account_email" {
 }
 
 output "gmail_updates_topic" {
-  value       = google_pubsub_topic.gmail_updates.name
+  value       = google_pubsub_topic.email_updates.name
   description = "The name of the Pub/Sub topic for Gmail updates"
 }
 
 output "email_processing_topic" {
-  value       = google_pubsub_topic.email_processing.name
+  value       = google_pubsub_topic.parsed_emails.name
   description = "The name of the Pub/Sub topic for email processing"
 }

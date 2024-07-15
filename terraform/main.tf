@@ -1,4 +1,3 @@
-# Provider configuration
 provider "google" {
   project = var.project_id
   region  = var.region
@@ -40,9 +39,12 @@ resource "google_pubsub_topic" "parsed_emails" {
 }
 
 resource "google_pubsub_topic" "incoming_emails" {
-  name                       = "incoming_emails"
-  project                    = var.project_id
-  message_retention_duration = "604800s"
+  name    = "incoming_emails"
+  project = var.project_id
+
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
 # Create Pub/Sub subscriptions
@@ -81,8 +83,8 @@ resource "google_project_iam_member" "service_account_roles" {
     "roles/secretmanager.secretAccessor",
     "roles/pubsub.publisher",
     "roles/pubsub.subscriber",
-    "roles/gmail.admin",
     "roles/datastore.user"
+    # Remove "roles/gmail.admin" from here
   ])
   project = var.project_id
   role    = each.key
@@ -90,17 +92,19 @@ resource "google_project_iam_member" "service_account_roles" {
 }
 
 # Create a secret for storing the service account key
-resource "google_secret_manager_secret" "sa_key" {
+resource "google_secret_manager_secret" "email_updates_secret" {
   secret_id = "email_updates_secret"
   project   = var.project_id
   replication {
+    auto {}
   }
+
   depends_on = [google_project_service.apis]
 }
 
 # Store the service account key in the secret
-resource "google_secret_manager_secret_version" "sa_key_version" {
-  secret      = google_secret_manager_secret.sa_key.id
+resource "google_secret_manager_secret_version" "email_updates_secret_version" {
+  secret      = google_secret_manager_secret.email_updates_secret.id
   secret_data = base64decode(google_service_account_key.gmail_watcher_key.private_key)
 }
 
@@ -131,11 +135,10 @@ resource "google_storage_bucket_object" "function_source" {
 }
 
 # Deploy the Cloud Function
-resource "google_cloudfunctions_function_v2" "gmail_watcher" {
-  name        = "gmail-watcher"
+resource "google_cloudfunctions2_function" "gmail_watcher" {
+  name        = "email_updates_fn"
   location    = var.region
   description = "Watches Gmail inbox and processes new emails"
-  project     = var.project_id
 
   build_config {
     runtime     = "python39"
@@ -152,6 +155,12 @@ resource "google_cloudfunctions_function_v2" "gmail_watcher" {
     max_instance_count = 1
     available_memory   = "256M"
     timeout_seconds    = 60
+    environment_variables = {
+      PROJECT_ID         = var.project_id
+      SECRETS_PROJECT_ID = var.project_id
+      SECRET_ID          = google_secret_manager_secret.email_updates_secret.secret_id
+    }
+    service_account_email = google_service_account.gmail_watcher.email
   }
 
   event_trigger {
@@ -160,37 +169,65 @@ resource "google_cloudfunctions_function_v2" "gmail_watcher" {
     pubsub_topic   = google_pubsub_topic.email_updates.id
   }
 
-  environment_variables = {
-    PROJECT_ID         = var.project_id
-    SECRETS_PROJECT_ID = var.secrets_project_id
-    SECRET_ID          = google_secret_manager_secret.sa_key.secret_id
-  }
-
-  service_account_email = google_service_account.gmail_watcher.email
-
   depends_on = [google_project_service.apis]
 }
 
-# Deploy the AI Agent Processor as a Cloud Run service
+# Update IAM policy for the AI Agent Processor
 resource "google_cloud_run_service" "ai_agent_processor" {
-  name     = "ai-agent-processor"
+  name     = "email-updates-fn"
   location = var.region
   project  = var.project_id
 
   template {
     spec {
       containers {
-        image = "${var.region}-docker.pkg.dev/${var.project_id}/ai-agent-processor/ai-agent-processor:${var.image_tag}"
+        image = "europe-west2-docker.pkg.dev/research-assistant-424819/gcf-artifacts/email__updates__fn:version_1"
+        
+        env {
+          name  = "LOG_EXECUTION_ID"
+          value = "true"
+        }
         env {
           name  = "PROJECT_ID"
           value = var.project_id
         }
         env {
+          name  = "SECRETS_PROJECT_ID"
+          value = var.project_id
+        }
+        env {
           name  = "SECRET_ID"
-          value = google_secret_manager_secret.sa_key.secret_id
+          value = "email_updates_secret"
+        }
+        
+        ports {
+          container_port = 8080
+          name           = "http1"
+        }
+        
+        resources {
+          limits = {
+            cpu    = "583m"
+            memory = "256M"
+          }
         }
       }
-      service_account_name = google_service_account.gmail_watcher.email
+      
+      container_concurrency = 1
+      timeout_seconds       = 60
+      service_account_name  = "service-99383323365@research-assistant-424819.iam.gserviceaccount.com"
+    }
+    
+    metadata {
+      annotations = {
+        "autoscaling.knative.dev/maxScale"                        = "1"
+        "cloudfunctions.googleapis.com/trigger-type"              = "google.cloud.pubsub.topic.v1.messagePublished"
+        "run.googleapis.com/client-name"                          = "console-cloud"
+        "run.googleapis.com/startup-cpu-boost"                    = "true"
+      }
+      labels = {
+        "run.googleapis.com/startupProbeType" = "Default"
+      }
     }
   }
 
@@ -199,15 +236,34 @@ resource "google_cloud_run_service" "ai_agent_processor" {
     latest_revision = true
   }
 
-  depends_on = [google_project_service.apis]
-}
+  metadata {
+    annotations = {
+      "run.googleapis.com/ingress"         = "all"
+      "run.googleapis.com/ingress-status"  = "all"
+    }
+    labels = {
+      "cloud.googleapis.com/location"       = var.region
+      "goog-cloudfunctions-runtime"         = "python39"
+      "goog-managed-by"                     = "cloudfunctions"
+      "run.googleapis.com/satisfiesPzs"     = "true"
+    }
+  }
 
-# Update IAM policy for the AI Agent Processor
-resource "google_cloud_run_service_iam_member" "ai_agent_processor_invoker" {
-  service  = google_cloud_run_service.ai_agent_processor.name
-  location = google_cloud_run_service.ai_agent_processor.location
-  role     = "roles/run.invoker"
-  member   = "serviceAccount:${google_service_account.gmail_watcher.email}"
+  lifecycle {
+    ignore_changes = [
+      metadata.0.annotations["run.googleapis.com/operation-id"],
+      metadata.0.annotations["serving.knative.dev/creator"],
+      metadata.0.annotations["serving.knative.dev/lastModifier"],
+      metadata.0.annotations["client.knative.dev/user-image"],
+      metadata.0.annotations["run.googleapis.com/client-name"],
+      metadata.0.annotations["run.googleapis.com/client-version"],
+      template.0.metadata.0.annotations["client.knative.dev/user-image"],
+      template.0.metadata.0.annotations["run.googleapis.com/client-name"],
+      template.0.metadata.0.annotations["run.googleapis.com/client-version"],
+      template.0.metadata.0.name,
+      template.0.spec.0.containers.0.image,
+    ]
+  }
 }
 
 # Create a Pub/Sub subscription for the AI Agent Processor
@@ -273,10 +329,10 @@ resource "google_storage_bucket" "gcf_v2_uploads" {
 }
 
 resource "google_storage_bucket" "gcf_v2_sources" {
-  name          = "gcf-v2-sources-${var.project_id}-${var.region}"
+  name          = "gcf-v2-sources-99383323365-europe-west2"
   location      = var.region
   project       = var.project_id
-  force_destroy = false
+  force_destroy = true
 
   uniform_bucket_level_access = true
 

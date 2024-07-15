@@ -9,6 +9,8 @@ on:
 env:
   PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
   GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
+  GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
+  REGION: europe-west2
 
 jobs:
   deploy:
@@ -46,10 +48,13 @@ jobs:
       uses: hashicorp/setup-terraform@v1
 
     - name: Terraform Init
-      run: terraform init
+      run: |
+        cd terraform
+        terraform init
 
     - name: Terraform Plan
       run: |
+        cd terraform
         terraform plan -var="project_id=$PROJECT_ID" \
                        -var="region=${{ env.REGION }}" \
                        -var="image_tag=${{ github.sha }}" \
