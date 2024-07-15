@@ -29,21 +29,22 @@ jobs:
         pip install -r src/gmail_watcher/requirements.txt
         pip install -r src/agents/requirements.txt
 
+    - name: Authenticate to Google Cloud
+      uses: google-github-actions/auth@v1
+      with:
+        credentials_json: ${{ secrets.GCP_SA_KEY }}
+
     - name: Set up Cloud SDK
       uses: google-github-actions/setup-gcloud@v1
-      with:
-        project_id: ${{ env.PROJECT_ID }}
-        service_account_key: ${{ env.GCP_SA_KEY }}
 
-    - name: Configure gcloud CLI
+    - name: Configure Docker
       run: |
-        gcloud config set project ${{ env.PROJECT_ID }}
-        gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev
+        gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev --quiet
 
     - name: Build and push Docker image
       run: |
         docker build -f src/agents/Dockerfile -t ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/ai-agent-processor/ai-agent-processor:${{ github.sha }} .
-        docker push ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/ai-agent-processor/ai-agent-processor:${{ github.sha }}   
+        docker push ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/ai-agent-processor/ai-agent-processor:${{ github.sha }}
 
     - name: Setup Terraform
       uses: hashicorp/setup-terraform@v1
