@@ -7,14 +7,16 @@ on:
     branches: [ main ]
 
 env:
-  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  PROJECT_ID: research-assistant-424819
   GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
   REGION: europe-west2
+  SECRETS_PROJECT_ID: "99383323365"
+  WATCHER_SERVICE_ACCOUNT_ID: "service-99383323365"
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    timeout-minutes: 30  # Set a timeout for the entire job
+    timeout-minutes: 30
 
     steps:
     - uses: actions/checkout@v2
@@ -40,12 +42,12 @@ jobs:
 
     - name: Configure Docker
       run: |
-        gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev --quiet
+        gcloud auth configure-docker europe-west2-docker.pkg.dev --quiet
 
     - name: Build and push Docker image
       run: |
-        docker build -f src/agents/Dockerfile -t ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/ai-agent-processor/ai-agent-processor:${{ github.sha }} .
-        docker push ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/ai-agent-processor/ai-agent-processor:${{ github.sha }}
+        docker build -f src/agents/Dockerfile -t europe-west2-docker.pkg.dev/research-assistant-424819/ai-agent-processor/ai-agent-processor:${{ github.sha }} .
+        docker push europe-west2-docker.pkg.dev/research-assistant-424819/ai-agent-processor/ai-agent-processor:${{ github.sha }}
 
     - name: Setup Terraform
       uses: hashicorp/setup-terraform@v1
@@ -60,9 +62,12 @@ jobs:
         cd terraform
         TF_LOG=DEBUG terraform plan \
           -parallelism=2 \
-          -var="project_id=${{ env.PROJECT_ID }}" \
-          -var="region=${{ env.REGION }}" \
+          -var="project_id=research-assistant-424819" \
+          -var="region=europe-west2" \
           -var="image_tag=${{ github.sha }}" \
+          -var="secrets_project_id=99383323365" \
+          -var="ai_agent_processor_image=europe-west2-docker.pkg.dev/research-assistant-424819/ai-agent-processor/ai-agent-processor:${{ github.sha }}" \
+          -var="watcher_service_account_id=service-99383323365" \
           -out=tfplan
       env:
         TF_LOG: DEBUG
