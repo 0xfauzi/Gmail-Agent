@@ -108,16 +108,16 @@ resource "google_secret_manager_secret" "email_updates_secret" {
   depends_on = [google_project_service.apis]
 }
 
-# Store the service account key in the secret
-data "google_secret_manager_secret_version" "email_updates_secret_version_data" {
-  project = var.project_id
-  secret  = google_secret_manager_secret.email_updates_secret.id
+data "google_secret_manager_secret_version" "email_updates_secret" {
+  project = var.secrets_project_id
+  secret  = "email_updates_secret"
   version = "latest"
 }
 
+# Store the service account key in the secret
 resource "google_secret_manager_secret_version" "email_updates_secret_version" {
-  secret      = "projects/${var.secrets_project_id}/secrets/${google_secret_manager_secret.email_updates_secret.id}"
-  secret_data = data.google_secret_manager_secret_version.email_updates_secret_version_data.secret_data
+  secret      = google_secret_manager_secret.email_updates_secret.id
+  secret_data = data.google_secret_manager_secret_version.email_updates_secret.secret_data
 }
 
 # Generate a key for the service account
