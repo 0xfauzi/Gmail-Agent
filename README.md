@@ -1,5 +1,7 @@
 # AI Email Assistant
 
+[![CI/CD](https://github.com/0xfauzi/email_agent/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/0xfauzi/email_agent/actions/workflows/ci-cd.yml)
+
 This project implements an AI-powered email assistant that automatically processes incoming emails, generates responses using AI agents, and sends replies. The system is built on Google Cloud Platform (GCP) and uses various GCP services for scalability and reliability.
 
 ## Architecture
