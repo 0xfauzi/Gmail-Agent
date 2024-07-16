@@ -96,6 +96,7 @@ resource "google_project_iam_member" "service_account_roles" {
   member  = "serviceAccount:${google_service_account.gmail_watcher.email}"
 }
 
+
 # Create a secret for storing the service account key
 resource "google_secret_manager_secret" "email_updates_secret" {
   secret_id = "email_updates_secret"
@@ -108,9 +109,15 @@ resource "google_secret_manager_secret" "email_updates_secret" {
 }
 
 # Store the service account key in the secret
+data "google_secret_manager_secret_version" "email_updates_secret_version_data" {
+  project = var.project_id
+  secret  = google_secret_manager_secret.email_updates_secret.id
+  version = "latest"
+}
+
 resource "google_secret_manager_secret_version" "email_updates_secret_version" {
-  secret      = google_secret_manager_secret.email_updates_secret.id
-  secret_data = base64decode(google_service_account_key.gmail_watcher_key.private_key)
+  secret      = "projects/${var.secrets_project_id}/secrets/${google_secret_manager_secret.email_updates_secret.id}"
+  secret_data = data.google_secret_manager_secret_version.email_updates_secret.secret_data
 }
 
 # Generate a key for the service account
