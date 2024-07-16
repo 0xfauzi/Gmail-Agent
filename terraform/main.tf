@@ -117,7 +117,7 @@ data "google_secret_manager_secret_version" "email_updates_secret_version_data" 
 
 resource "google_secret_manager_secret_version" "email_updates_secret_version" {
   secret      = "projects/${var.secrets_project_id}/secrets/${google_secret_manager_secret.email_updates_secret.id}"
-  secret_data = data.google_secret_manager_secret_version.email_updates_secret.secret_data
+  secret_data = data.google_secret_manager_secret_version.email_updates_secret_version_data.secret_data
 }
 
 # Generate a key for the service account
