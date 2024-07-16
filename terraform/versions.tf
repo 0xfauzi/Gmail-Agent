@@ -10,4 +10,8 @@ terraform {
       version = "~> 2.0"
     }
   }
+  backend "gcs" {
+    bucket = "research-assistant-424819-tfstate"
+    prefix = "terraform/state"
+  }
 }
