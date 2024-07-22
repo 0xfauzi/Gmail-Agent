@@ -29,5 +29,5 @@ variable "ai_agent_processor_image" {
 variable "watcher_service_account_id" {
   description = "The ID of the service account for the Gmail watcher"
   type        = string
-  default     = "service-99383323365"
+  default     = "service-99383323365@research-assistant-424819.iam.gserviceaccount.com"
 }
