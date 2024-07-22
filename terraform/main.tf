@@ -79,7 +79,8 @@ resource "google_project_iam_member" "service_account_roles" {
     "roles/secretmanager.secretAccessor",
     "roles/pubsub.publisher",
     "roles/pubsub.subscriber",
-    "roles/datastore.user"
+    "roles/datastore.user",
+    "roles/gmail.readonly"
   ])
   project = var.project_id
   role    = each.key
@@ -217,7 +218,7 @@ resource "google_cloud_run_service" "ai_agent_processor" {
       
       container_concurrency = 1
       timeout_seconds       = 60
-      service_account_name  = "service-99383323365@research-assistant-424819.iam.gserviceaccount.com"
+      service_account_name  = google_service_account.gmail_watcher.email
     }
     
     metadata {
