@@ -161,8 +161,8 @@ resource "google_cloudfunctions2_function" "gmail_watcher" {
       PROJECT_ID         = var.project_id
       SECRETS_PROJECT_ID = var.project_id
       SECRET_ID          = google_secret_manager_secret.email_updates_secret.secret_id
-      PULL_TOPIC_NAME    = "email_updates"
-      PUSH_TOPIC_NAME    = "parsed_emails"
+      PULL_TOPIC_NAME    = "projects/research-assistant-424819/topics/email_updates"
+      PUSH_TOPIC_NAME    = "projects/research-assistant-424819/topics/parsed_emails"
     }
     service_account_email = google_service_account.gmail_watcher.email
   }
