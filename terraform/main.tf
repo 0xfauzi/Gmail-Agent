@@ -209,8 +209,8 @@ resource "google_cloud_run_service" "ai_agent_processor" {
         
         resources {
           limits = {
-            cpu    = "583m"
-            memory = "256M"
+            cpu    = "1"
+            memory = "512Mi"
           }
         }
       }
