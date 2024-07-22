@@ -185,7 +185,7 @@ resource "google_cloud_run_service" "ai_agent_processor" {
   template {
     spec {
       containers {
-        image = "europe-west2-docker.pkg.dev/research-assistant-424819/ai-agent-processor/ai-agent-processor"        
+        image = "europe-west2-docker.pkg.dev/research-assistant-424819/ai-agent-processor/ai-agent-processor:latest"        
         env {
           name  = "LOG_EXECUTION_ID"
           value = "true"
