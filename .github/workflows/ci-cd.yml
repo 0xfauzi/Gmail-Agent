@@ -53,9 +53,6 @@ jobs:
     - name: Setup Terraform
       uses: hashicorp/setup-terraform@v1
 
-    - name: Wait for IAM changes to propagate
-      run: sleep 60
-
     - name: Terraform Init
       run: |
         cd terraform
