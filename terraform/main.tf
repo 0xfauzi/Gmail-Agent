@@ -43,15 +43,6 @@ resource "google_pubsub_topic" "parsed_emails" {
   project = var.project_id
 }
 
-resource "google_pubsub_topic" "incoming_emails" {
-  name    = "incoming_emails"
-  project = var.project_id
-
-  lifecycle {
-    prevent_destroy = true
-  }
-}
-
 # Create Pub/Sub subscriptions
 resource "google_pubsub_subscription" "parsed_emails_sub" {
   name                       = "parsed_emails-sub"
@@ -88,8 +79,8 @@ resource "google_project_iam_member" "service_account_roles" {
     "roles/secretmanager.secretAccessor",
     "roles/pubsub.publisher",
     "roles/pubsub.subscriber",
-    "roles/datastore.user"
-    # Remove "roles/gmail.admin" from here
+    "roles/datastore.user",
+    "roles/gmail.admin"
   ])
   project = var.project_id
   role    = each.key
@@ -210,6 +201,14 @@ resource "google_cloud_run_service" "ai_agent_processor" {
         env {
           name  = "SECRET_ID"
           value = "email_updates_secret"
+        }
+        env {
+          name  = "PULL_TOPIC_NAME"
+          value = "email_updates"
+        }
+        env {
+          name  = "PUSH_TOPIC_NAME"
+          value = "parsed_emails"
         }
         
         ports {
