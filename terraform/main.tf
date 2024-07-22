@@ -162,6 +162,8 @@ resource "google_cloudfunctions2_function" "gmail_watcher" {
       PROJECT_ID         = var.project_id
       SECRETS_PROJECT_ID = var.project_id
       SECRET_ID          = google_secret_manager_secret.email_updates_secret.secret_id
+      PULL_TOPIC_NAME    = "email_updates"
+      PUSH_TOPIC_NAME    = "parsed_emails"
     }
     service_account_email = google_service_account.gmail_watcher.email
   }
@@ -201,16 +203,7 @@ resource "google_cloud_run_service" "ai_agent_processor" {
         env {
           name  = "SECRET_ID"
           value = "email_updates_secret"
-        }
-        env {
-          name  = "PULL_TOPIC_NAME"
-          value = "email_updates"
-        }
-        env {
-          name  = "PUSH_TOPIC_NAME"
-          value = "parsed_emails"
-        }
-        
+        }    
         ports {
           container_port = 8080
           name           = "http1"
