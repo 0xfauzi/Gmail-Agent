@@ -178,15 +178,14 @@ resource "google_cloudfunctions2_function" "gmail_watcher" {
 
 # Update IAM policy for the AI Agent Processor
 resource "google_cloud_run_service" "ai_agent_processor" {
-  name     = "email-updates-fn"
+  name     = "ai-agent-fn"
   location = var.region
   project  = var.project_id
 
   template {
     spec {
       containers {
-        image = "europe-west2-docker.pkg.dev/research-assistant-424819/gcf-artifacts/email__updates__fn:version_1"
-        
+        image = "europe-west2-docker.pkg.dev/research-assistant-424819/ai-agent-processor:latest"        
         env {
           name  = "LOG_EXECUTION_ID"
           value = "true"
