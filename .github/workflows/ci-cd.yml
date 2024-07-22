@@ -63,7 +63,7 @@ jobs:
     - name: Terraform Plan
       run: |
         cd terraform
-        TF_LOG=DEBUG terraform plan \
+        terraform plan \
           -parallelism=2 \
           -var="project_id=${{ env.PROJECT_ID }}" \
           -var="region=${{ env.REGION }}" \
@@ -73,7 +73,7 @@ jobs:
           -var="watcher_service_account_id=${{ env.WATCHER_SERVICE_ACCOUNT_ID }}" \
           -out=tfplan
       env:
-        TF_LOG: DEBUG
+        TF_LOG: INFO
 
     - name: Terraform Apply
       if: github.event_name == 'push' && github.ref == 'refs/heads/main'
