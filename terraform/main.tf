@@ -20,7 +20,8 @@ resource "google_project_service" "apis" {
     "servicemanagement.googleapis.com",
     "serviceusage.googleapis.com",
     "storage.googleapis.com",
-    "cloudbuild.googleapis.com"
+    "cloudbuild.googleapis.com",
+    "roles/gmail.admin"
   ])
   project = var.project_id
   service = each.key
