@@ -409,7 +409,7 @@ resource "google_cloudfunctions2_function_iam_member" "invoker" {
   cloud_function = google_cloudfunctions2_function.setup_watcher.name
 
   role   = "roles/cloudfunctions.invoker"
-  member = "serviceAccount:${google_service_account.gmail_watcher.email}"
+  member = google_service_account.gmail_watcher.email
 }
 
 # Create a Cloud Scheduler job to trigger the watcher function
