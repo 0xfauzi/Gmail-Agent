@@ -383,6 +383,9 @@ resource "google_cloudfunctions2_function" "setup_watcher" {
         object = google_storage_bucket_object.watcher_source.name
       }
     }
+    environment_variables = {
+      GOOGLE_FUNCTION_SOURCE = "watcher.py"
+    }
   }
 
   service_config {
