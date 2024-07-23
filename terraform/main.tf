@@ -404,6 +404,15 @@ resource "google_cloudfunctions2_function" "setup_watcher" {
   }
 }
 
+resource "google_cloudfunctions2_function_iam_member" "invoker" {
+  project        = google_cloudfunctions2_function.setup_watcher.project
+  location       = google_cloudfunctions2_function.setup_watcher.location
+  cloud_function = google_cloudfunctions2_function.setup_watcher.name
+
+  role   = "roles/cloudfunctions.invoker"
+  member = "serviceAccount:${google_service_account.gmail_watcher.email}"
+}
+
 # Create a Cloud Scheduler job to trigger the watcher function
 resource "google_cloud_scheduler_job" "setup_watcher_job" {
   name             = "setup-gmail-watcher-job"
@@ -420,4 +429,13 @@ resource "google_cloud_scheduler_job" "setup_watcher_job" {
       service_account_email = google_service_account.gmail_watcher.email
     }
   }
+}
+
+resource "google_cloudfunctions2_function_iam_member" "scheduler_invoker" {
+  project        = google_cloudfunctions2_function.setup_watcher.project
+  location       = google_cloudfunctions2_function.setup_watcher.location
+  cloud_function = google_cloudfunctions2_function.setup_watcher.name
+
+  role   = "roles/cloudfunctions.invoker"
+  member = "serviceAccount:${google_cloud_scheduler_job.setup_watcher_job.service_account_email}"
 }
