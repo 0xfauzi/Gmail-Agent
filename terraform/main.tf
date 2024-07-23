@@ -429,12 +429,3 @@ resource "google_cloud_scheduler_job" "setup_watcher_job" {
     }
   }
 }
-
-resource "google_cloudfunctions2_function_iam_member" "scheduler_invoker" {
-  project        = google_cloudfunctions2_function.setup_watcher.project
-  location       = google_cloudfunctions2_function.setup_watcher.location
-  cloud_function = google_cloudfunctions2_function.setup_watcher.name
-
-  role   = "roles/cloudfunctions.invoker"
-  member = "serviceAccount:${google_cloud_scheduler_job.setup_watcher_job.service_account_email}"
-}
