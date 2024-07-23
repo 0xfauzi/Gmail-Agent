@@ -80,7 +80,8 @@ resource "google_project_iam_member" "service_account_roles" {
     "roles/secretmanager.secretAccessor",
     "roles/pubsub.publisher",
     "roles/pubsub.subscriber",
-    "roles/datastore.user"
+    "roles/datastore.user",
+    "roles/cloudfunctions.invoker"
   ])
   project = var.project_id
   role    = each.key
