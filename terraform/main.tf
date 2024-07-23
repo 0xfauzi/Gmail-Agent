@@ -355,3 +355,64 @@ resource "google_storage_bucket" "gcf_v2_sources" {
     goog-managed-by = "cloudfunctions"
   }
 }
+
+data "archive_file" "watcher_source" {
+  type        = "zip"
+  source_file = "${path.module}/../src/gmail_watcher/watcher.py"
+  output_path = "${path.module}/watcher.zip"
+}
+
+resource "google_storage_bucket_object" "watcher_source" {
+  name   = "watcher-${data.archive_file.watcher_source.output_md5}.zip"
+  bucket = google_storage_bucket.function_bucket.name
+  source = data.archive_file.watcher_source.output_path
+}
+
+resource "google_cloudfunctions2_function" "setup_watcher" {
+  name        = "setup_watcher"
+  location    = var.region
+  description = "Checks and renews Gmail watch"
+
+  build_config {
+    runtime     = "python39"
+    entry_point = "watcher_function"
+    source {
+      storage_source {
+        bucket = google_storage_bucket.function_bucket.name
+        object = google_storage_bucket_object.watcher_source.name
+      }
+    }
+  }
+
+  service_config {
+    max_instance_count = 1
+    available_memory   = "256M"
+    timeout_seconds    = 60
+    environment_variables = {
+      PROJECT_ID         = var.project_id
+      SECRETS_PROJECT_ID = var.project_id
+      SECRET_ID          = google_secret_manager_secret.email_updates_secret.secret_id
+      PULL_TOPIC_NAME    = google_pubsub_topic.email_updates.name
+      USER_EMAIL         = "fauzi@0xfauzi.com"
+    }
+    service_account_email = google_service_account.gmail_watcher.email
+  }
+}
+
+# Create a Cloud Scheduler job to trigger the watcher function
+resource "google_cloud_scheduler_job" "gmail_watcher_job" {
+  name             = "setup-gmail-watcher-job"
+  description      = "Triggers the Gmail watcher function"
+  schedule         = "0 */6 * * *"  # Run every 6 hours
+  time_zone        = "UTC"
+  attempt_deadline = "320s"
+
+  http_target {
+    http_method = "GET"
+    uri         = google_cloudfunctions2_function.gmail_watcher.url
+
+    oidc_token {
+      service_account_email = google_service_account.gmail_watcher.email
+    }
+  }
+}
