@@ -406,7 +406,7 @@ resource "google_cloudfunctions2_function" "setup_watcher" {
 # Create a Cloud Scheduler job to trigger the watcher function
 resource "google_cloud_scheduler_job" "setup_watcher_job" {
   name             = "setup-gmail-watcher-job"
-  description      = "Triggers the Gmail watcher function"
+  description      = "Triggers the Gmail watcher function periodically"
   schedule         = "0 */6 * * *"  # Run every 6 hours
   time_zone        = "UTC"
   attempt_deadline = "320s"
