@@ -68,7 +68,7 @@ def setup_gmail_watch(service, user_email):
         logger.error(f"Failed to set up watch: {str(e)}")
         raise
 
-def check_and_renew_watch(request):
+def check_and_renew_watch():
     logger.info(f"Checking and renewing Gmail watch for user: {user_email}")
     try:
         service = get_gmail_service(user_email)
@@ -84,6 +84,9 @@ def check_and_renew_watch(request):
         logger.error(f"Failed to check and renew watch: {str(e)}")
         return f"Error: {str(e)}", 500
 
-# Cloud Function entry point
-def watcher_function(request):
-    return check_and_renew_watch(request)
+def watcher_function(request, context):
+    """Cloud Function entry point"""
+    logger.info("Watcher function triggered")
+    logger.info(f"Request: {request}")
+    logger.info(f"Context: {context}")
+    return check_and_renew_watch()

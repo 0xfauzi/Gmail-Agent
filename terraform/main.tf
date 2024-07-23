@@ -359,7 +359,7 @@ resource "google_storage_bucket" "gcf_v2_sources" {
 
 data "archive_file" "watcher_source" {
   type        = "zip"
-  source_file = "${path.module}/../src/gmail_watcher/watcher.py"
+  source_file = "${path.module}/../src/watcher_renewal"
   output_path = "${path.module}/watcher.zip"
 }
 
