@@ -404,7 +404,7 @@ resource "google_cloudfunctions2_function" "setup_watcher" {
 }
 
 # Create a Cloud Scheduler job to trigger the watcher function
-resource "google_cloud_scheduler_job" "gmail_watcher_job" {
+resource "google_cloud_scheduler_job" "setup_watcher_job" {
   name             = "setup-gmail-watcher-job"
   description      = "Triggers the Gmail watcher function"
   schedule         = "0 */6 * * *"  # Run every 6 hours
@@ -413,7 +413,7 @@ resource "google_cloud_scheduler_job" "gmail_watcher_job" {
 
   http_target {
     http_method = "GET"
-    uri         = google_cloudfunctions2_function.gmail_watcher.url
+    uri         = google_cloudfunctions2_function.setup_watcher.url
 
     oidc_token {
       service_account_email = google_service_account.gmail_watcher.email
