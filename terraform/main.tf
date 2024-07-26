@@ -357,78 +357,14 @@ resource "google_storage_bucket" "gcf_v2_sources" {
   }
 }
 
-data "archive_file" "watcher_source" {
-  type        = "zip"
-  source_dir = "${path.module}/../src/watcher_renewal"
-  output_path = "${path.module}/watcher.zip"
+resource "google_artifact_registry_repository" "watcher_renewal" {
+  location      = var.region
+  repository_id = "watcher-renewal"
+  description   = "Docker repository for watcher renewal images"
+  format        = "DOCKER"
+  project       = var.project_id
 }
 
-resource "google_storage_bucket_object" "watcher_source" {
-  name   = "watcher-${data.archive_file.watcher_source.output_md5}.zip"
-  bucket = google_storage_bucket.function_bucket.name
-  source = data.archive_file.watcher_source.output_path
-}
-
-resource "google_cloudfunctions2_function" "setup_watcher" {
-  name        = "setup_watcher"
-  location    = var.region
-  description = "Checks and renews Gmail watch"
-
-  build_config {
-    runtime     = "python39"
-    entry_point = "watcher_function"
-    source {
-      storage_source {
-        bucket = google_storage_bucket.function_bucket.name
-        object = google_storage_bucket_object.watcher_source.name
-      }
-    }
-    environment_variables = {
-      GOOGLE_FUNCTION_SOURCE = "watcher.py"
-    }
-  }
-
-  service_config {
-    max_instance_count = 1
-    available_memory   = "256M"
-    timeout_seconds    = 60
-    environment_variables = {
-      PROJECT_ID         = var.project_id
-      SECRETS_PROJECT_ID = var.project_id
-      SECRET_ID          = google_secret_manager_secret.email_updates_secret.secret_id
-      PULL_TOPIC_NAME    = google_pubsub_topic.email_updates.name
-      USER_EMAIL         = "fauzi@0xfauzi.com"
-    }
-    service_account_email = google_service_account.gmail_watcher.email
-  }
-}
-
-resource "google_cloudfunctions2_function_iam_member" "invoker" {
-  project        = google_cloudfunctions2_function.setup_watcher.project
-  location       = google_cloudfunctions2_function.setup_watcher.location
-  cloud_function = google_cloudfunctions2_function.setup_watcher.name
-
-  role   = "roles/cloudfunctions.invoker"
-  member = google_service_account.gmail_watcher.email
-}
-
-# Create a Cloud Scheduler job to trigger the watcher function
-resource "google_cloud_scheduler_job" "setup_watcher_job" {
-  name             = "setup-gmail-watcher-job"
-  description      = "Triggers the Gmail watcher function periodically"
-  schedule         = "0 */6 * * *"  # Run every 6 hours
-  time_zone        = "UTC"
-  attempt_deadline = "320s"
-
-  http_target {
-    http_method = "GET"
-    uri         = google_cloudfunctions2_function.setup_watcher.url
-
-    oidc_token {
-      service_account_email = google_service_account.gmail_watcher.email
-    }
-  }
-}
 
 resource "google_cloud_run_v2_job" "watcher_renewal_job" {
   name     = "watcher-renewal-job"
@@ -437,7 +373,7 @@ resource "google_cloud_run_v2_job" "watcher_renewal_job" {
   template {
     template {
       containers {
-        image = "${var.region}-docker.pkg.dev/${var.project_id}/watcher-renewal/watcher-renewal:latest"
+        image = "${var.region}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.watcher_renewal.repository_id}/watcher-renewal:latest"
         
         env {
           name  = "PROJECT_ID"
@@ -464,6 +400,8 @@ resource "google_cloud_run_v2_job" "watcher_renewal_job" {
       service_account = google_service_account.gmail_watcher.email
     }
   }
+
+  depends_on = [google_artifact_registry_repository.watcher_renewal]
 }
 
 resource "google_cloud_scheduler_job" "run_watcher_renewal_job" {
