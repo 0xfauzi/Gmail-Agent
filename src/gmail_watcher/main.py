@@ -195,14 +195,7 @@ def pubsub_push(event, context):
         
         if not user_email:
             logger.error("User email not found in the Pub/Sub message")
-            return
-        
-        service = get_gmail_service(user_email)
-        
-        # Check and renew watch if necessary
-        if not check_and_renew_watch(service, user_email):
-            logger.error(f"Failed to ensure active Gmail watch for user: {user_email}")
-            return
+            return    
 
         logger.info(f"Received history ID: {history_id} for user: {user_email}")
         fetch_changes(history_id, user_email)
