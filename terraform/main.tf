@@ -412,6 +412,19 @@ resource "google_cloudfunctions2_function_iam_member" "invoker" {
   member = google_service_account.gmail_watcher.email
 }
 
+resource "google_cloudfunctions2_function_iam_member" "scheduler_invoker" {
+  project        = google_cloudfunctions2_function.setup_watcher.project
+  location       = google_cloudfunctions2_function.setup_watcher.location
+  cloud_function = google_cloudfunctions2_function.setup_watcher.name
+
+  role   = "roles/cloudfunctions.invoker"
+  member = "serviceAccount:service-${data.google_project.project.number}@gcp-sa-cloudscheduler.iam.gserviceaccount.com"
+}
+
+data "google_project" "project" {
+  project_id = var.project_id
+}
+
 # Create a Cloud Scheduler job to trigger the watcher function
 resource "google_cloud_scheduler_job" "setup_watcher_job" {
   name             = "setup-gmail-watcher-job"
