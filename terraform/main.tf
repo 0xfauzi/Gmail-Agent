@@ -429,3 +429,56 @@ resource "google_cloud_scheduler_job" "setup_watcher_job" {
     }
   }
 }
+
+resource "google_cloud_run_v2_job" "watcher_renewal_job" {
+  name     = "watcher-renewal-job"
+  location = var.region
+
+  template {
+    template {
+      containers {
+        image = "${var.region}-docker.pkg.dev/${var.project_id}/watcher-renewal/watcher-renewal:latest"
+        
+        env {
+          name  = "PROJECT_ID"
+          value = var.project_id
+        }
+        env {
+          name  = "SECRETS_PROJECT_ID"
+          value = var.secrets_project_id
+        }
+        env {
+          name  = "SECRET_ID"
+          value = google_secret_manager_secret.email_updates_secret.secret_id
+        }
+        env {
+          name  = "PULL_TOPIC_NAME"
+          value = google_pubsub_topic.email_updates.name
+        }
+        env {
+          name  = "USER_EMAIL"
+          value = "fauzi@0xfauzi.com"
+        }
+      }
+      
+      service_account = google_service_account.gmail_watcher.email
+    }
+  }
+}
+
+resource "google_cloud_scheduler_job" "run_watcher_renewal_job" {
+  name             = "run-watcher-renewal-job"
+  description      = "Triggers the watcher renewal Cloud Run job"
+  schedule         = "0 */6 * * *"  # Run every 6 hours
+  time_zone        = "UTC"
+  attempt_deadline = "320s"
+
+  http_target {
+    http_method = "POST"
+    uri         = "https://${var.region}-run.googleapis.com/apis/run.googleapis.com/v1/namespaces/${var.project_id}/jobs/watcher-renewal-job:run"
+    
+    oauth_token {
+      service_account_email = google_service_account.gmail_watcher.email
+    }
+  }
+}
