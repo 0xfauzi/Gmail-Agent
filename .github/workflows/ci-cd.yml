@@ -50,12 +50,12 @@ jobs:
         docker build -f src/agents/Dockerfile -t ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/ai-agent-processor/ai-agent-processor:${{ github.sha }} .
         docker push ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/ai-agent-processor/ai-agent-processor:${{ github.sha }}
 
-    # - name: Build and push Watcher Renewal Docker image
-    #   run: |
-    #     docker build -f src/watcher_renewal/Dockerfile -t ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/watcher-renewal/watcher-renewal:${{ github.sha }} src/watcher_renewal
-    #     docker push ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/watcher-renewal/watcher-renewal:${{ github.sha }}
-    #     docker tag ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/watcher-renewal/watcher-renewal:${{ github.sha }} ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/watcher-renewal/watcher-renewal:latest
-    #     docker push ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/watcher-renewal/watcher-renewal:latest
+    - name: Build and push Watcher Renewal Docker image
+      run: |
+        docker build -f src/watcher_renewal/Dockerfile -t ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/watcher-renewal/watcher-renewal:${{ github.sha }} src/watcher_renewal
+        docker push ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/watcher-renewal/watcher-renewal:${{ github.sha }}
+        docker tag ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/watcher-renewal/watcher-renewal:${{ github.sha }} ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/watcher-renewal/watcher-renewal:latest
+        docker push ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/watcher-renewal/watcher-renewal:latest
 
     - name: Setup Terraform
       uses: hashicorp/setup-terraform@v1
