@@ -389,7 +389,7 @@ resource "google_cloud_run_v2_job" "watcher_renewal_job" {
         }
         env {
           name  = "PULL_TOPIC_NAME"
-          value = google_pubsub_topic.email_updates.name
+          value = google_pubsub_topic.watcher_renewal_topic.name
         }
         env {
           name  = "USER_EMAIL"
@@ -420,3 +420,9 @@ resource "google_cloud_scheduler_job" "run_watcher_renewal_job" {
     }
   }
 }
+
+resource "google_pubsub_topic" "watcher_renewal_topic" {
+  name    = "watcher-renewal-topic"
+  project = var.project_id
+}
+
