@@ -185,18 +185,11 @@ def fetch_changes(history_id, user_email):
 
 def pubsub_push(event, context):
     logger.info("Pub/Sub push received")
+    logger.info(f"Received event: {event}")
+    logger.info(f"Received context: {context}")
     try:
-        if isinstance(event, dict) and 'data' in event:
-            # This is a Pub/Sub event
-            pubsub_message = base64.b64decode(event['data']).decode('utf-8')
-            data = json.loads(pubsub_message)
-        elif isinstance(event, dict):
-            # This is a direct invocation
-            data = event
-        else:
-            # This is an unexpected format
-            data = json.loads(event)
-            
+        pubsub_message = base64.b64decode(event['data']).decode('utf-8')
+        data = json.loads(pubsub_message)
         logger.info(f"Received Pub/Sub message data: {data}")
         
         user_email = data.get('emailAddress')
