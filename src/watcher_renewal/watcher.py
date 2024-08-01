@@ -13,7 +13,6 @@ logger = logging.getLogger(__name__)
 PROJECT_ID = os.environ.get('PROJECT_ID')
 SECRETS_PROJECT_ID = os.environ.get('SECRETS_PROJECT_ID')
 SECRET_ID = os.environ.get('SECRET_ID')
-PULL_TOPIC_NAME = os.environ.get('PULL_TOPIC_NAME')
 USER_EMAIL = os.environ.get('USER_EMAIL')
 
 def access_secret_version(version_id="latest"):
@@ -33,7 +32,7 @@ def get_gmail_service():
 
 def setup_gmail_watch():
     service = get_gmail_service()
-    topic_name = f'projects/{PROJECT_ID}/topics/{PULL_TOPIC_NAME}'
+    topic_name = f'projects/{PROJECT_ID}/topics/email_updates'
     request = {
         'labelIds': ['INBOX'],
         'topicName': topic_name

@@ -388,10 +388,6 @@ resource "google_cloud_run_v2_job" "watcher_renewal_job" {
           value = google_secret_manager_secret.email_updates_secret.secret_id
         }
         env {
-          name  = "PULL_TOPIC_NAME"
-          value = google_pubsub_topic.watcher_renewal_topic.name
-        }
-        env {
           name  = "USER_EMAIL"
           value = "fauzi@0xfauzi.com"
         }
