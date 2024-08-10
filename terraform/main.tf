@@ -164,6 +164,8 @@ resource "google_cloudfunctions2_function" "gmail_watcher" {
       SECRET_ID          = google_secret_manager_secret.email_updates_secret.secret_id
       PULL_TOPIC_NAME    = google_pubsub_topic.email_updates.id
       PUSH_TOPIC_NAME    = google_pubsub_topic.parsed_emails.id
+      LOG_EXECUTION_ID   = "true"
+      ABSL_LOGGING_MODULE_INTERCEPT_LEVEL = "fatal"
     }
     service_account_email = google_service_account.gmail_watcher.email
   }
