@@ -181,6 +181,9 @@ def fetch_changes(history_id, user_email):
         current_history_id = profile['historyId']
         logger.info(f"Current history ID: {current_history_id}")
 
+        changes = service.users().history().list(userId='me', startHistoryId=current_history_id).execute()
+        logger.info(f"Response from history().list(): {changes}")
+        
         if int(current_history_id) > int(history_id):
             logger.info("Current history ID is greater than the received history ID. Fetching changes...")
             changes = service.users().history().list(userId='me', startHistoryId=history_id).execute()
