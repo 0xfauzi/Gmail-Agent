@@ -4,10 +4,10 @@ from google.cloud import secretmanager
 from googleapiclient.discovery import build
 from google.oauth2 import service_account
 import logging
+from absl import app
+from absl import logging as absl_loggin
 
-# Set up logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+
 
 # Environment variables
 PROJECT_ID = os.environ.get('PROJECT_ID')
@@ -39,10 +39,16 @@ def setup_gmail_watch():
     }
     try:
         response = service.users().watch(userId='me', body=request).execute()
-        logger.info(f"Watch setup successful. Expires at: {response.get('expiration')}")
+        logging.info(f"Watch setup successful. Expires at: {response.get('expiration')}")
     except Exception as e:
-        logger.error(f"Failed to set up watch: {str(e)}")
+        logging.error(f"Failed to set up watch: {str(e)}")
         raise
 
+# Set up logging
+def initialize_logging():
+    logging.getLogger().setLevel(logging.INFO)
+    absl_logging.use_absl_handler()
+
 if __name__ == "__main__":
+    initialize_logging()
     setup_gmail_watch()

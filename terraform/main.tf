@@ -80,7 +80,8 @@ resource "google_project_iam_member" "service_account_roles" {
     "roles/secretmanager.secretAccessor",
     "roles/pubsub.publisher",
     "roles/pubsub.subscriber",
-    "roles/datastore.user"
+    "roles/datastore.user",
+    "roles/logging.logWriter"
   ])
   project = var.project_id
   role    = each.key
@@ -416,9 +417,3 @@ resource "google_cloud_scheduler_job" "run_watcher_renewal_job" {
     }
   }
 }
-
-resource "google_pubsub_topic" "watcher_renewal_topic" {
-  name    = "watcher-renewal-topic"
-  project = var.project_id
-}
-
