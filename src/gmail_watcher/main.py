@@ -16,7 +16,7 @@ from googleapiclient.errors import HttpError
 from tenacity import retry, stop_after_attempt, wait_exponential
 
 
-
+os.environ['ABSL_LOGGING_MODULE_INTERCEPT_LEVEL'] = 'fatal'
 SCOPES = ['https://mail.google.com/']
 project_id = os.environ.get('PROJECT_ID')
 secrets_project_id = os.environ.get('SECRETS_PROJECT_ID')
