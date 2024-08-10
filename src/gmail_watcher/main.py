@@ -8,6 +8,7 @@ from google.oauth2 import service_account
 from google.cloud import secretmanager
 import os
 import logging
+import sys
 from absl import app
 from absl import logging as absl_logging
 from google.auth.exceptions import RefreshError
@@ -189,9 +190,13 @@ def initialize_logging():
 
 def pubsub_push(event, context):
     initialize_logging()
-    logging.info("Pub/Sub push received")
-    logging.info(f"Received event: {event}")
-    logging.info(f"Received context: {context}")
+    print("Function started", file=sys.stderr)
+    logging.error("This is an error log")
+    logging.warning("This is a warning log")
+    logging.info("This is an info log")
+    logging.debug("This is a debug log")
+    print(f"Event: {event}", file=sys.stdout)
+    print(f"Context: {context}", file=sys.stdout)
     try:
         pubsub_message = base64.b64decode(event['data']).decode('utf-8')
         data = json.loads(pubsub_message)
