@@ -13,6 +13,7 @@ env:
   SECRETS_PROJECT_ID: "99383323365"
   WATCHER_SERVICE_ACCOUNT_ID: "service-99383323365"
   GCS_BUCKET_NAME: ${{ secrets.GCS_BUCKET_NAME }}
+  DOCKER_REGISTRY: ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}
 
 jobs:
   deploy:
@@ -20,12 +21,20 @@ jobs:
     timeout-minutes: 30
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
 
     - name: Set up Python
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v4
       with:
         python-version: '3.10'
+
+    - name: Cache Python dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
 
     - name: Install dependencies
       run: |
@@ -42,23 +51,20 @@ jobs:
       uses: google-github-actions/setup-gcloud@v1
 
     - name: Configure Docker
-      run: |
-        gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev --quiet
+      run: gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev --quiet
 
-    - name: Build and push Docker image
+    - name: Build and push Docker images
       run: |
-        docker build -f src/agents/Dockerfile -t ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/ai-agent-processor/ai-agent-processor:${{ github.sha }} .
-        docker push ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/ai-agent-processor/ai-agent-processor:${{ github.sha }}
-
-    - name: Build and push Watcher Renewal Docker image
-      run: |
-        docker build -f src/watcher_renewal/Dockerfile -t ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/watcher-renewal/watcher-renewal:${{ github.sha }} src/watcher_renewal
-        docker push ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/watcher-renewal/watcher-renewal:${{ github.sha }}
-        docker tag ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/watcher-renewal/watcher-renewal:${{ github.sha }} ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/watcher-renewal/watcher-renewal:latest
-        docker push ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/watcher-renewal/watcher-renewal:latest
+        docker build -f src/agents/Dockerfile -t ${{ env.DOCKER_REGISTRY }}/ai-agent-processor/ai-agent-processor:${{ github.sha }} .
+        docker push ${{ env.DOCKER_REGISTRY }}/ai-agent-processor/ai-agent-processor:${{ github.sha }}
+        cp src/cloud_logging_helper.py src/watcher_renewal/
+        docker build -f src/watcher_renewal/Dockerfile -t ${{ env.DOCKER_REGISTRY }}/watcher-renewal/watcher-renewal:${{ github.sha }} src/watcher_renewal
+        docker push ${{ env.DOCKER_REGISTRY }}/watcher-renewal/watcher-renewal:${{ github.sha }}
+        docker tag ${{ env.DOCKER_REGISTRY }}/watcher-renewal/watcher-renewal:${{ github.sha }} ${{ env.DOCKER_REGISTRY }}/watcher-renewal/watcher-renewal:latest
+        docker push ${{ env.DOCKER_REGISTRY }}/watcher-renewal/watcher-renewal:latest
 
     - name: Setup Terraform
-      uses: hashicorp/setup-terraform@v1
+      uses: hashicorp/setup-terraform@v2
 
     - name: Terraform Init
       run: |
@@ -67,7 +73,7 @@ jobs:
           -backend-config="bucket=${{ env.GCS_BUCKET_NAME }}" \
           -backend-config="prefix=terraform/state"
 
-    - name: Terraform Plan
+    - name: Terraform Plan and Apply
       run: |
         cd terraform
         terraform plan \
@@ -76,14 +82,11 @@ jobs:
           -var="region=${{ env.REGION }}" \
           -var="image_tag=${{ github.sha }}" \
           -var="secrets_project_id=${{ env.SECRETS_PROJECT_ID }}" \
-          -var="ai_agent_processor_image=${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/ai-agent-processor/ai-agent-processor:${{ github.sha }}" \
+          -var="ai_agent_processor_image=${{ env.DOCKER_REGISTRY }}/ai-agent-processor/ai-agent-processor:${{ github.sha }}" \
           -var="watcher_service_account_id=${{ env.WATCHER_SERVICE_ACCOUNT_ID }}" \
           -out=tfplan
+        if [ "${{ github.event_name }}" == "push" ] && [ "${{ github.ref }}" == "refs/heads/main" ]; then
+          terraform apply -auto-approve -parallelism=2 tfplan
+        fi
       env:
         TF_LOG: INFO
-
-    - name: Terraform Apply
-      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-      run: |
-        cd terraform
-        terraform apply -auto-approve -parallelism=2 tfplan
