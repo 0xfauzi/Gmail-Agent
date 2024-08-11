@@ -180,9 +180,6 @@ def fetch_changes(history_id, user_email):
         profile = service.users().getProfile(userId='me').execute()
         current_history_id = profile['historyId']
         logger.info(f"Current history ID: {current_history_id}")
-
-        changes = service.users().history().list(userId='me', startHistoryId=current_history_id).execute()
-        logger.info(f"Response from history().list(): {changes}")
         
         if int(current_history_id) > int(history_id):
             logger.info("Current history ID is greater than the received history ID. Fetching changes...")
@@ -222,15 +219,20 @@ def pubsub_push(event, context):
         data = json.loads(pubsub_message)
         logger.info(f"Received Pub/Sub message data: {data}")
         
-        user_email = data.get('emailAddress')
-        history_id = data['historyId']
-        
+        user_email = data.get('emailAddress')        
         if not user_email:
             logger.error("User email not found in the Pub/Sub message")
             return    
 
-        logger.info(f"Received history ID: {history_id} for user: {user_email}")
-        fetch_changes(history_id, user_email)
+        service = get_gmail_service(user_email)
+        
+        # Get the latest history ID
+        profile = service.users().getProfile(userId='me').execute()
+        latest_history_id = profile['historyId']
+        
+        # Fetch changes since the last processed history ID
+        fetch_changes(latest_history_id, user_email)
+        logger.info(f"Received history ID: {latest_history_id} for user: {user_email}")
         logger.info("Pub/Sub push processing completed")
     except Exception as e:
         logger.error(f"Error in pubsub_push: {str(e)}")
