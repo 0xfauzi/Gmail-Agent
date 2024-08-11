@@ -12,6 +12,7 @@ import sys
 from google.auth.exceptions import RefreshError
 from googleapiclient.errors import HttpError
 from tenacity import retry, stop_after_attempt, wait_exponential
+from google.cloud import datastore
 
 
 
@@ -45,6 +46,21 @@ def setup_logging():
 
 logger = setup_logging()
 
+
+def get_last_history_id(user_email):
+    client = datastore.Client()
+    key = client.key('LastProcessedHistoryId', user_email)
+    entity = client.get(key)
+    if entity:
+        return entity['history_id']
+    return None
+
+def update_last_history_id(user_email, history_id):
+    client = datastore.Client()
+    key = client.key('LastProcessedHistoryId', user_email)
+    entity = datastore.Entity(key=key)
+    entity['history_id'] = history_id
+    client.put(entity)
 
 def access_secret_version(version_id="latest"):
     logging.info(f"Accessing secret version: {secret_id}")
@@ -176,54 +192,54 @@ def fetch_changes(history_id, user_email):
     logger.info(f"Fetching changes since history ID: {history_id} for user: {user_email}")
     service = get_gmail_service(user_email)
     try:
-        # First, get the current history ID
+        last_processed_history_id = get_last_history_id(user_email)
+        if last_processed_history_id:
+            history_id = last_processed_history_id
+
         profile = service.users().getProfile(userId='me').execute()
         current_history_id = profile['historyId']
         logger.info(f"Current history ID: {current_history_id}")
         
         if int(current_history_id) > int(history_id):
-            logger.info("Current history ID is greater than the received history ID. Fetching changes...")
-            changes = service.users().history().list(userId='me', startHistoryId=history_id).execute()
-            logger.info(f"Response from history().list(): {changes}")
+            logger.info("Current history ID is greater than the last processed history ID. Fetching changes...")
             
-            if 'historyId' in changes:
-                logger.info(f"New history ID in changes: {changes['historyId']}")
-            else:
-                logger.warning("No new history ID in the response")
+            while True:
+                changes = service.users().history().list(userId='me', startHistoryId=history_id).execute()
+                logger.info(f"Response from history().list(): {changes}")
+                
+                history_list = changes.get('history', [])
+                logger.info(f"Found {len(history_list)} changes")
+                
+                for change in history_list:
+                    logger.info(f"Processing change: {change}")
+                    for message in change.get('messagesAdded', []):
+                        process_email(message['message']['id'], user_email)
+                
+                if 'nextPageToken' not in changes:
+                    break
+                history_id = changes['historyId']
             
-            history_list = changes.get('history', [])
-            logger.info(f"Found {len(history_list)} changes")
-            
-            for change in history_list:
-                logger.info(f"Processing change: {change}")
-                for message in change.get('messages', []):
-                    process_email(message['id'], user_email)
-            
+            update_last_history_id(user_email, current_history_id)
             logger.info("All changes processed successfully")
         else:
-            logger.info("Current history ID is not greater than the received history ID. No new changes to process.")
+            logger.info("No new changes to process.")
     except Exception as e:
         logger.error(f"Failed to fetch or process changes: {str(e)}")
         raise
 
 def pubsub_push(event, context):
     print("Function started", file=sys.stderr)
-    logger.error("This is an error log")
-    logger.warning("This is a warning log")
-    logger.info("This is an info log")
-    logger.debug("This is a debug log")
-    print(f"Event: {event}", file=sys.stdout)
-    print(f"Context: {context}", file=sys.stdout)
+    logger.info("Function started")
     try:
         pubsub_message = base64.b64decode(event['data']).decode('utf-8')
         data = json.loads(pubsub_message)
         logger.info(f"Received Pub/Sub message data: {data}")
         
         user_email = data.get('emailAddress')
-        history_id = data['historyId']
+        history_id = data.get('historyId')
         
-        if not user_email:
-            logger.error("User email not found in the Pub/Sub message")
+        if not user_email or not history_id:
+            logger.error("User email or history ID not found in the Pub/Sub message")
             return    
 
         logger.info(f"Received history ID: {history_id} for user: {user_email}")

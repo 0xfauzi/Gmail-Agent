@@ -1,15 +1,12 @@
 import os
 import json
-from google.cloud import secretmanager
+from google.cloud import secretmanager, datastore
 from googleapiclient.discovery import build
 from google.oauth2 import service_account
 import logging
 from absl import app
-from absl import logging as absl_loggin
+from absl import logging as absl_logging
 
-
-
-# Environment variables
 PROJECT_ID = os.environ.get('PROJECT_ID')
 SECRETS_PROJECT_ID = os.environ.get('SECRETS_PROJECT_ID')
 SECRET_ID = os.environ.get('SECRET_ID')
@@ -40,14 +37,23 @@ def setup_gmail_watch():
     try:
         response = service.users().watch(userId='me', body=request).execute()
         logging.info(f"Watch setup successful. Expires at: {response.get('expiration')}")
+        
+        # Store the historyId
+        client = datastore.Client()
+        key = client.key('LastProcessedHistoryId', USER_EMAIL)
+        entity = datastore.Entity(key=key)
+        entity['history_id'] = response['historyId']
+        client.put(entity)
+        
+        logging.info(f"Stored initial historyId: {response['historyId']}")
     except Exception as e:
         logging.error(f"Failed to set up watch: {str(e)}")
         raise
 
-# Set up logging
 def initialize_logging():
     logging.getLogger().setLevel(logging.INFO)
     absl_logging.use_absl_handler()
+
 
 if __name__ == "__main__":
     initialize_logging()
