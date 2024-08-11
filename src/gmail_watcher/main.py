@@ -21,7 +21,7 @@ project_id = os.environ.get('PROJECT_ID')
 secrets_project_id = os.environ.get('SECRETS_PROJECT_ID')
 secret_id = os.environ.get('SECRET_ID')
 pull_topic_name = os.environ.get('PULL_TOPIC_NAME')
-push_topic_name = os.environ.get('PUSH_TOPIC_NAME')
+push_topic_name = os.environ.get('PUSH_TOPIC_NAME').split('/')[-1]  # Extract only the topic name
 
 # Set this environment variable to suppress the Abseil warning
 os.environ['ABSL_LOGGING_MODULE_INTERCEPT_LEVEL'] = 'fatal'
@@ -178,7 +178,7 @@ def extract_email_content(msg):
     content = re.sub(r'\s+', ' ', content)  # Replace multiple spaces with single space
     content = content.strip()  # Remove leading/trailing whitespace
     
-    logger.info("Email content extracted and cleaned successfully")
+    logger.info("Email content extracted and cleaned successfully\n\n {content} \n\n")
     return content
 
 def publish_message(message):
