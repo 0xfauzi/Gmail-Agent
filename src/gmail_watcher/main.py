@@ -13,7 +13,7 @@ from google.auth.exceptions import RefreshError
 from googleapiclient.errors import HttpError
 from tenacity import retry, stop_after_attempt, wait_exponential
 from google.cloud import datastore
-
+from cloud_logging_helper import setup_logging
 
 
 SCOPES = ['https://mail.google.com/']
@@ -25,24 +25,6 @@ push_topic_name = os.environ.get('PUSH_TOPIC_NAME').split('/')[-1]  # Extract on
 
 # Set this environment variable to suppress the Abseil warning
 os.environ['ABSL_LOGGING_MODULE_INTERCEPT_LEVEL'] = 'fatal'
-
-# Custom logging setup
-class CloudLoggingHandler(logging.Handler):
-    def emit(self, record):
-        message = self.format(record)
-        print(message, file=sys.stderr)
-
-def setup_logging():
-    logger = logging.getLogger()
-    logger.setLevel(logging.DEBUG)
-    
-    handler = CloudLoggingHandler()
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    handler.setFormatter(formatter)
-    
-    logger.addHandler(handler)
-    
-    return logger
 
 logger = setup_logging()
 
@@ -178,7 +160,7 @@ def extract_email_content(msg):
     content = re.sub(r'\s+', ' ', content)  # Replace multiple spaces with single space
     content = content.strip()  # Remove leading/trailing whitespace
     
-    logger.info("Email content extracted and cleaned successfully\n\n {content} \n\n")
+    logger.info("Email content extracted and cleaned successfully")
     return content
 
 def publish_message(message):

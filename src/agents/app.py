@@ -9,12 +9,12 @@ from google.cloud import secretmanager
 import json
 import logging
 from tenacity import retry, stop_after_attempt, wait_exponential
+from cloud_logging_helper import setup_logging
 
 app = Flask(__name__)
 
 # Set up logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+logger = setup_logging()
 
 # Initialize Firestore client
 db = firestore.Client()

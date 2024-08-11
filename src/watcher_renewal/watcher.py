@@ -4,13 +4,14 @@ from google.cloud import secretmanager, datastore
 from googleapiclient.discovery import build
 from google.oauth2 import service_account
 import logging
-from absl import app
-from absl import logging as absl_logging
+from cloud_logging_helper import setup_logging
 
 PROJECT_ID = os.environ.get('PROJECT_ID')
 SECRETS_PROJECT_ID = os.environ.get('SECRETS_PROJECT_ID')
 SECRET_ID = os.environ.get('SECRET_ID')
 USER_EMAIL = os.environ.get('USER_EMAIL')
+
+logger = setup_logging()
 
 def access_secret_version(version_id="latest"):
     client = secretmanager.SecretManagerServiceClient()
@@ -50,11 +51,5 @@ def setup_gmail_watch():
         logging.error(f"Failed to set up watch: {str(e)}")
         raise
 
-def initialize_logging():
-    logging.getLogger().setLevel(logging.INFO)
-    absl_logging.use_absl_handler()
-
-
 if __name__ == "__main__":
-    initialize_logging()
     setup_gmail_watch()
