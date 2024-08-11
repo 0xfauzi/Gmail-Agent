@@ -4,7 +4,7 @@ WORKDIR /app
 
 # Copy the requirements file into the container
 COPY requirements.txt .
-COPY src/watcher_renewal/cloud_logging_helper.py .
+COPY src/cloud_logging_helper.py .
 
 # Install the Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
