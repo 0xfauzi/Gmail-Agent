@@ -162,7 +162,7 @@ resource "google_cloudfunctions2_function" "gmail_watcher" {
       PROJECT_ID         = var.project_id
       SECRETS_PROJECT_ID = var.project_id
       SECRET_ID          = google_secret_manager_secret.email_updates_secret.secret_id
-      PULL_TOPIC_NAME    = google_pubsub_topic.gmail_notifications.id
+      PULL_TOPIC_NAME    = google_pubsub_topic.email_updates.id
       PUSH_TOPIC_NAME    = google_pubsub_topic.parsed_emails.id
       LOG_EXECUTION_ID   = "true"
       GOOGLE_CLOUD_LOGGING_LEVEL = "INFO"
@@ -173,15 +173,10 @@ resource "google_cloudfunctions2_function" "gmail_watcher" {
   event_trigger {
     trigger_region = var.region
     event_type     = "google.cloud.pubsub.topic.v1.messagePublished"
-    pubsub_topic   = google_pubsub_topic.gmail_notifications.id
+    pubsub_topic   = google_pubsub_topic.email_updates.id
   }
 
   depends_on = [google_project_service.apis]
-}
-
-resource "google_pubsub_topic" "gmail_notifications" {
-  name    = "gmail_notifications"
-  project = var.project_id
 }
 
 # Update IAM policy for the AI Agent Processor
