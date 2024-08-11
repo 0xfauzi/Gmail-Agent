@@ -156,7 +156,7 @@ resource "google_cloudfunctions2_function" "gmail_watcher" {
 
   service_config {
     max_instance_count = 1
-    available_memory   = "512"
+    available_memory   = "512Mi"
     timeout_seconds    = 90
     environment_variables = {
       PROJECT_ID         = var.project_id
