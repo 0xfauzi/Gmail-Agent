@@ -13,7 +13,7 @@ env:
   SECRETS_PROJECT_ID: "99383323365"
   WATCHER_SERVICE_ACCOUNT_ID: "service-99383323365"
   GCS_BUCKET_NAME: ${{ secrets.GCS_BUCKET_NAME }}
-  DOCKER_REGISTRY: europe-west2-docker.pkg.dev/${{ env.PROJECT_ID }}
+  DOCKER_REGISTRY: europe-west2-docker.pkg.dev/research-assistant-424819
 
 jobs:
   deploy:
