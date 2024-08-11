@@ -7,7 +7,7 @@ WORKDIR /app
 # Copy only the necessary files
 COPY src/agents/requirements.txt /app/requirements.txt
 COPY src/agents/app.py /app/app.py
-COPY src/agents/cloud_logging_helper.py /app/cloud_logging_helper.py
+COPY src/cloud_logging_helper.py /app/cloud_logging_helper.py
 
 # Install any needed packages specified in requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
