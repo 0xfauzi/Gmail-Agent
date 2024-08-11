@@ -1,6 +1,6 @@
 import os
 import base64
-from flask import Flask, request
+from flask import Flask, request, jsonify
 from google.cloud import firestore
 from crewai import Agent, Task, Crew
 from googleapiclient.discovery import build
@@ -10,6 +10,8 @@ import json
 import logging
 from tenacity import retry, stop_after_attempt, wait_exponential
 from cloud_logging_helper import setup_logging
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
 
 app = Flask(__name__)
 
@@ -22,23 +24,27 @@ db = firestore.Client()
 PROJECT_ID = os.environ.get('PROJECT_ID')
 SECRET_ID = os.environ.get('SECRET_ID')
 
-def access_secret_version(version_id="latest"):
+async def access_secret_version(version_id="latest"):
     client = secretmanager.SecretManagerServiceClient()
     name = f"projects/{PROJECT_ID}/secrets/{SECRET_ID}/versions/{version_id}"
     response = client.access_secret_version(request={"name": name})
     return response.payload.data.decode('UTF-8')
 
-def get_gmail_service(user_email):
+async def get_gmail_service(user_email):
     service_account_info = json.loads(access_secret_version())
     credentials = service_account.Credentials.from_service_account_info(
         service_account_info,
         scopes=['https://www.googleapis.com/auth/gmail.send']
     )
     delegated_credentials = credentials.with_subject(user_email)
-    return build('gmail', 'v1', credentials=delegated_credentials)
+    return await asyncio.to_thread(build, 'gmail', 'v1', credentials=delegated_credentials)
+
+@app.route('/health', methods=['GET'])
+def health_check():
+    return jsonify({"status": "healthy"}), 200
 
 @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=4, max=10))
-def process_email(email_data):
+async def process_email(email_data):
     try:
         logger.info(f"Processing email for user: {email_data['user_email']}")
         
@@ -72,7 +78,7 @@ def process_email(email_data):
         result = crew.kickoff()
 
         # Send the response email
-        send_email(email_data['user_email'], email_data['from'], email_data['subject'], result)
+        await send_email(email_data['user_email'], email_data['from'], email_data['subject'], result)
 
         # Update Firestore with the result
         db.collection('processed_emails').add({
@@ -97,9 +103,9 @@ def create_message(sender, to, subject, message_text):
     }
     return message
 
-def send_email(user_email, to_email, subject, content):
+async def send_email(user_email, to_email, subject, content):
     try:
-        service = get_gmail_service(user_email)
+        service = await get_gmail_service(user_email)
         message = create_message(user_email, to_email, subject, content)
         sent_message = service.users().messages().send(userId='me', body=message).execute()
         logger.info(f"Response email sent. Message Id: {sent_message['id']}")
@@ -107,25 +113,38 @@ def send_email(user_email, to_email, subject, content):
         logger.error(f"An error occurred while sending email: {e}")
 
 @app.route('/', methods=['POST'])
-def index():
-    envelope = request.get_json()
-    if not envelope:
-        msg = 'no Pub/Sub message received'
-        logger.error(f'error: {msg}')
-        return f'Bad Request: {msg}', 400
+async def process_email():
+    try:
+        envelope = await request.get_json()
+        if not envelope:
+            msg = "no Pub/Sub message received"
+            logger.error(f"error: {msg}")
+            return f"Bad Request: {msg}", 400
 
-    if not isinstance(envelope, dict) or 'message' not in envelope:
-        msg = 'invalid Pub/Sub message format'
-        logger.error(f'error: {msg}')
-        return f'Bad Request: {msg}', 400
+        if not isinstance(envelope, dict) or "message" not in envelope:
+            msg = "invalid Pub/Sub message format"
+            logger.error(f"error: {msg}")
+            return f"Bad Request: {msg}", 400
 
-    pubsub_message = envelope['message']
+        pubsub_message = envelope["message"]
 
-    if isinstance(pubsub_message, dict) and 'data' in pubsub_message:
-        data = json.loads(base64.b64decode(pubsub_message['data']).decode('utf-8'))
-        process_email(data)
+        if isinstance(pubsub_message, dict) and "data" in pubsub_message:
+            data = base64.b64decode(pubsub_message["data"]).decode("utf-8").strip()
+            logger.info(f"Received message: {data}")
+            
+            # Process the email data asynchronously
+            await process_email(data)
+            
+            return ("", 204)
+        else:
+            msg = "invalid Pub/Sub message format"
+            logger.error(f"error: {msg}")
+            return f"Bad Request: {msg}", 400
 
-    return '', 204
+    except Exception as e:
+        logger.exception(f"Error processing request: {str(e)}")
+        return "Internal Server Error", 500
+
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=int(os.environ.get('PORT', 8080)))

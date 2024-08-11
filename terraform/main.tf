@@ -179,7 +179,6 @@ resource "google_cloudfunctions2_function" "gmail_watcher" {
   depends_on = [google_project_service.apis]
 }
 
-# Update IAM policy for the AI Agent Processor
 resource "google_cloud_run_service" "ai_agent_processor" {
   name     = "ai-agent-fn"
   location = var.region
@@ -213,25 +212,30 @@ resource "google_cloud_run_service" "ai_agent_processor" {
         resources {
           limits = {
             cpu    = "1"
-            memory = "512Mi"
+            memory = "2048Mi"
           }
+        }
+
+        startup_probe {
+          http_get {
+            path = "/health"
+          }
+          initial_delay_seconds = 10
+          period_seconds        = 5
+          failure_threshold     = 5
         }
       }
       
-      container_concurrency = 1
-      timeout_seconds       = 60
+      container_concurrency = 80
+      timeout_seconds       = 300
       service_account_name  = google_service_account.gmail_watcher.email
     }
     
     metadata {
       annotations = {
-        "autoscaling.knative.dev/maxScale"                        = "1"
-        "cloudfunctions.googleapis.com/trigger-type"              = "google.cloud.pubsub.topic.v1.messagePublished"
-        "run.googleapis.com/client-name"                          = "console-cloud"
-        "run.googleapis.com/startup-cpu-boost"                    = "true"
-      }
-      labels = {
-        "run.googleapis.com/startupProbeType" = "Default"
+        "autoscaling.knative.dev/maxScale"      = "10"
+        "run.googleapis.com/client-name"        = "terraform"
+        "run.googleapis.com/startup-cpu-boost"  = "true"
       }
     }
   }
@@ -246,26 +250,12 @@ resource "google_cloud_run_service" "ai_agent_processor" {
       "run.googleapis.com/ingress"         = "all"
       "run.googleapis.com/ingress-status"  = "all"
     }
-    labels = {
-      "cloud.googleapis.com/location"       = var.region
-      "goog-cloudfunctions-runtime"         = "python39"
-      "goog-managed-by"                     = "cloudfunctions"
-      "run.googleapis.com/satisfiesPzs"     = "true"
-    }
   }
 
   lifecycle {
     ignore_changes = [
-      metadata.0.annotations["run.googleapis.com/operation-id"],
-      metadata.0.annotations["serving.knative.dev/creator"],
-      metadata.0.annotations["serving.knative.dev/lastModifier"],
-      metadata.0.annotations["client.knative.dev/user-image"],
-      metadata.0.annotations["run.googleapis.com/client-name"],
-      metadata.0.annotations["run.googleapis.com/client-version"],
-      template.0.metadata.0.annotations["client.knative.dev/user-image"],
-      template.0.metadata.0.annotations["run.googleapis.com/client-name"],
-      template.0.metadata.0.annotations["run.googleapis.com/client-version"],
-      template.0.metadata.0.name,
+      metadata.0.annotations,
+      template.0.metadata.0.annotations,
       template.0.spec.0.containers.0.image,
     ]
   }
