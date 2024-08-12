@@ -1,7 +1,7 @@
 from crewai import Crew
 from langchain_anthropic import ChatAnthropic
-from ai_research_tasks import *
-from ai_research_agents import *
+from crews.ai_research_crew.ai_research_tasks import *
+from crews.ai_research_crew.ai_research_agents import *
 
 class AIResearchCrew:
     def __init__(self, email_subject, email_body, email_from):

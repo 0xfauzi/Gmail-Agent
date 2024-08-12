@@ -1,7 +1,7 @@
 from crewai import Agent
 from langchain_openai import ChatOpenAI
 from langchain_anthropic import ChatAnthropic
-from research_tools import serper_tool
+from crews.ai_research_crew.research_tools import serper_tool
 
 # Define your agents with roles and goals
 administrative_assistant = Agent(

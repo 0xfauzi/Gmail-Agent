@@ -1,5 +1,5 @@
 from crewai import Task
-from ai_research_agents import administrative_assistant, researcher, writer
+from crews.ai_research_crew.ai_research_agents import administrative_assistant, researcher, writer
 from pydantic import BaseModel
 
 
