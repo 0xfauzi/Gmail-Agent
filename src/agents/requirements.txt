@@ -13,3 +13,4 @@ langchain-core
 langchain-anthropic
 openai
 tools
+google-cloud-datastore
