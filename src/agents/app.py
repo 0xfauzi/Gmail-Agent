@@ -111,6 +111,7 @@ async def send_email(user_email, to_email, subject, content):
 
 @app.route('/health', methods=['GET'])
 def health_check():
+    logger.info("Health check called")
     return jsonify({"status": "healthy"}), 200
 
 @app.route('/', methods=['POST'])
@@ -148,4 +149,5 @@ async def process_email():
 
 
 if __name__ == '__main__':
+    logger.info("Application starting...")
     app.run(debug=True, host='0.0.0.0', port=int(os.environ.get('PORT', 8080)))

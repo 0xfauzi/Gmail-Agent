@@ -20,5 +20,4 @@ ENV PORT 8080
 ENV PROJECT_ID research-assistant-424819
 ENV SERVICE_ACCOUNT_SECRET_ID email_updates_secret
 
-# Run app.py when the container launches
-CMD ["python", "app.py"]
+CMD exec gunicorn --bind :$PORT --workers 1 --threads 8 --timeout 0 app:app
