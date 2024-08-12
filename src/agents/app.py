@@ -9,6 +9,8 @@ import json
 import sys
 from cloud_logging_helper import setup_logging
 from crews.ai_research_crew.research_crew import AIResearchCrew
+from google.cloud import datastore
+
 
 app = Flask(__name__)
 
@@ -40,6 +42,20 @@ def get_gmail_service(user_email):
     delegated_credentials = credentials.with_subject(user_email)
     return build('gmail', 'v1', credentials=delegated_credentials)
 
+# Add this function to check if an email has been processed
+def is_email_processed(email_id):
+    datastore_client = datastore.Client()
+    key = datastore_client.key('ProcessedEmail', email_id)
+    return datastore_client.get(key) is not None
+
+# Add this function to mark an email as processed
+def mark_email_processed(email_id):
+    datastore_client = datastore.Client()
+    key = datastore_client.key('ProcessedEmail', email_id)
+    entity = datastore.Entity(key=key)
+    entity['processed'] = True
+    datastore_client.put(entity)
+
 @app.route('/health', methods=['GET'])
 def health_check():
     logger.info("Health check called")
@@ -67,8 +83,19 @@ def process_email():
             data = base64.b64decode(pubsub_message["data"]).decode("utf-8").strip()
             logger.info(f"Received message: {data}")
             
+            # Parse the email data
+            email_data = json.loads(data)
+            
+            # Check if the email has already been processed
+            if is_email_processed(email_data['id']):
+                logger.info(f"Email {email_data['id']} has already been processed. Skipping.")
+                return ("", 204)
+            
             # Process the email data
-            process_email_data(json.loads(data))
+            process_email_data(email_data)
+            
+            # Mark the email as processed
+            mark_email_processed(email_data['id'])
             
             return ("", 204)
         else:
