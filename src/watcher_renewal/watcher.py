@@ -4,14 +4,14 @@ from google.cloud import secretmanager, datastore
 from googleapiclient.discovery import build
 from google.oauth2 import service_account
 import logging
-from cloud_logging_helper import setup_logging
+import cloud_logging_helper
 
 PROJECT_ID = os.environ.get('PROJECT_ID')
 SECRETS_PROJECT_ID = os.environ.get('SECRETS_PROJECT_ID')
 SECRET_ID = os.environ.get('SECRET_ID')
 USER_EMAIL = os.environ.get('USER_EMAIL')
 
-logger = setup_logging()
+logger = cloud_logging_helper.setup_logging()
 
 def access_secret_version(version_id="latest"):
     client = secretmanager.SecretManagerServiceClient()

@@ -4,8 +4,6 @@ FROM python:3.10-slim
 # Set the working directory in the container
 WORKDIR /app
 
-ENV PYTHONPATH=/app
-
 # Copy only the necessary files
 COPY src/agents/requirements.txt /app/requirements.txt
 COPY src/agents/app.py /app/app.py

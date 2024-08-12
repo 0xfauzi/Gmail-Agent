@@ -12,7 +12,5 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy the watcher.py file into the container
 COPY watcher.py .
 
-ENV PYTHONPATH=/app
-
 # Set the command to run the watcher.py script
 CMD ["python", "watcher.py"]
