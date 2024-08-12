@@ -123,7 +123,7 @@ def process_email(message_id, user_email):
         'user_email': user_email,
         'subject': next((header['value'] for header in msg['payload']['headers'] if header['name'].lower() == 'subject'), 'No Subject'),
         'from': next((header['value'] for header in msg['payload']['headers'] if header['name'].lower() == 'from'), 'Unknown Sender'),
-        'content': email_content
+        'body': email_content
     }
     publish_message(email_data)
     logger.info(f"Email {message_id} processed and published")
