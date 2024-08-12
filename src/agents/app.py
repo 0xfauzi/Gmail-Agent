@@ -9,11 +9,12 @@ from google.cloud import secretmanager
 import json
 import logging
 import sys
-from openai import OpenAI
 from tenacity import retry, stop_after_attempt, wait_exponential
 from cloud_logging_helper import setup_logging
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
+from langchain_openai import ChatOpenAI
+
 
 app = Flask(__name__)
 
@@ -95,13 +96,19 @@ def process_email_data(email_data):
             role='Researcher',
             goal='Research and gather relevant information',
             backstory='You are an AI research assistant',
-            llm=openai_llm
+            llm=ChatOpenAI(
+                temperature=0,
+                model="gpt-4o"
+            )
         )
         writer = Agent(
             role='Writer',
             goal='Write concise and informative responses',
             backstory='You are an AI writing assistant',
-            llm=openai_llm
+            llm=ChatOpenAI(
+                temperature=0,
+                model="gpt-4o"
+            )
         )
 
         # Define tasks

@@ -8,3 +8,6 @@ functions-framework
 Flask
 tenacity
 crewai
+langchain-community
+langchain-core
+openai
