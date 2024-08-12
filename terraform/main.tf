@@ -204,6 +204,14 @@ resource "google_cloud_run_service" "ai_agent_processor" {
           name  = "SECRET_ID"
           value = "email_updates_secret"
         }    
+        env {
+          name  = "OPENAI_API_KEY"
+          value = "OPENAI_API_KEY"
+        }
+        env {
+          name  = "ANTHROPIC_API_KEY"
+          value = "ANTHROPIC_API_KEY"
+        }
         ports {
           container_port = 8080
           name           = "http1"

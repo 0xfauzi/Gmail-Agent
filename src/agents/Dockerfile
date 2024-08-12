@@ -19,5 +19,7 @@ EXPOSE 8080
 ENV PORT 8080
 ENV PROJECT_ID research-assistant-424819
 ENV SERVICE_ACCOUNT_SECRET_ID email_updates_secret
+ENV OPENAI_API_KEY_SECRET_ID OPENAI_API_KEY
+ENV ANTHROPIC_API_KEY_SECRET_ID ANTHROPIC_API_KEY
 
 CMD exec gunicorn --bind :$PORT --workers 1 --threads 8 --timeout 0 app:app

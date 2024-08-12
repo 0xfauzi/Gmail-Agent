@@ -9,6 +9,7 @@ from google.cloud import secretmanager
 import json
 import logging
 import sys
+from openai import OpenAI
 from tenacity import retry, stop_after_attempt, wait_exponential
 from cloud_logging_helper import setup_logging
 import asyncio
@@ -30,6 +31,11 @@ def access_secret_version(version_id="latest"):
     name = f"projects/{PROJECT_ID}/secrets/{SECRET_ID}/versions/{version_id}"
     response = client.access_secret_version(request={"name": name})
     return response.payload.data.decode('UTF-8')
+
+OPENAI_API_KEY = access_secret_version('OPENAI_API_KEY')
+ANTHROPIC_API_KEY = access_secret_version('ANTHROPIC_API_KEY')
+
+openai_llm = OpenAI(api_key=OPENAI_API_KEY)
 
 def get_gmail_service(user_email):
     service_account_info = json.loads(access_secret_version())
@@ -88,12 +94,14 @@ def process_email_data(email_data):
         researcher = Agent(
             role='Researcher',
             goal='Research and gather relevant information',
-            backstory='You are an AI research assistant'
+            backstory='You are an AI research assistant',
+            llm=openai_llm
         )
         writer = Agent(
             role='Writer',
             goal='Write concise and informative responses',
-            backstory='You are an AI writing assistant'
+            backstory='You are an AI writing assistant',
+            llm=openai_llm
         )
 
         # Define tasks
