@@ -13,7 +13,7 @@ from google.auth.exceptions import RefreshError
 from googleapiclient.errors import HttpError
 from tenacity import retry, stop_after_attempt, wait_exponential
 from google.cloud import datastore
-from cloud_logging_helper import setup_logging
+from watcher_cloud_logging_helper import setup_logging
 
 
 SCOPES = ['https://mail.google.com/']
