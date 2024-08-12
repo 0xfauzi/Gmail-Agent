@@ -2,19 +2,13 @@ import os
 import base64
 from flask import Flask, request, jsonify
 from google.cloud import firestore
-from crewai import Agent, Task, Crew
 from googleapiclient.discovery import build
 from google.oauth2 import service_account
 from google.cloud import secretmanager
 import json
-import logging
 import sys
-from tenacity import retry, stop_after_attempt, wait_exponential
 from cloud_logging_helper import setup_logging
-import asyncio
-from concurrent.futures import ThreadPoolExecutor
-from langchain_openai import ChatOpenAI
-
+from crews.ai_research_crew import AIResearchCrew
 
 app = Flask(__name__)
 
@@ -90,51 +84,32 @@ def process_email_data(email_data):
     try:
         logger.info(f"Processing email for user: {email_data['user_email']}")
         
-        # Create your AI agents here
-        researcher = Agent(
-            role='Researcher',
-            goal='Research and gather relevant information',
-            backstory='You are an AI research assistant',
-            llm=ChatOpenAI(
-                temperature=0,
-                model="gpt-4o"
-            )
-        )
-        writer = Agent(
-            role='Writer',
-            goal='Write concise and informative responses',
-            backstory='You are an AI writing assistant',
-            llm=ChatOpenAI(
-                temperature=0,
-                model="gpt-4o"
-            )
-        )
+        # Ensure all required fields are present
+        required_fields = ['subject', 'body', 'from', 'user_email', 'id']
+        for field in required_fields:
+            if field not in email_data:
+                raise ValueError(f"Missing required field: {field}")
 
-        # Define tasks
-        research_task = Task(
-            description=f"Research information related to: {email_data['subject']}",
-            agent=researcher
+        # Create the AIResearchCrew instance with the email details
+        crew = AIResearchCrew(
+            subject=email_data['subject'],
+            body=email_data['body'],
+            sender=email_data['from']
         )
-        write_task = Task(
-            description=f"Write a response to the email: {email_data['content']}",
-            agent=writer
-        )
-
-        # Create and run the crew
-        crew = Crew(
-            agents=[researcher, writer],
-            tasks=[research_task, write_task]
-        )
-        result = crew.kickoff()
+        result = crew.run()
+        logger.info(f"Result: {result}")
+        result_content = result.tasks_output[2].research_report # Index 2 is the rewrite_the_report task
 
         # Send the response email
-        send_email(email_data['user_email'], email_data['from'], email_data['subject'], result)
+        send_email(email_data['user_email'], email_data['from'], email_data['subject'], result_content)
 
         # Update Firestore with the result
         db.collection('processed_emails').add({
             'user_email': email_data['user_email'],
             'email_id': email_data['id'],
-            'response': result
+            'subject': email_data['subject'],
+            'from': email_data['from'],
+            'response': result_content
         })
 
         logger.info(f"Email processed successfully for user: {email_data['user_email']}")

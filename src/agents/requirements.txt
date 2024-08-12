@@ -10,4 +10,6 @@ tenacity
 crewai
 langchain-community
 langchain-core
+langchain-anthropic
 openai
+tools
