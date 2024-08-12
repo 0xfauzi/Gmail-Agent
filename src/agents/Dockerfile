@@ -7,6 +7,11 @@ WORKDIR /app
 # Copy only the necessary files
 COPY src/agents/requirements.txt /app/requirements.txt
 COPY src/agents/app.py /app/app.py
+COPY src/agents/crews/ai_research_crew/ai_research_tasks.py /app/crews/ai_research_crew/ai_research_tasks.py
+COPY src/agents/crews/ai_research_crew/ai_research_agents.py /app/crews/ai_research_crew/ai_research_agents.py
+COPY src/agents/crews/ai_research_crew/research_crew.py /app/crews/ai_research_crew/research_crew.py
+COPY src/agents/crews/ai_research_crew/research_tools.py /app/crews/ai_research_crew/research_tools.py
+
 COPY src/cloud_logging_helper.py /app/cloud_logging_helper.py
 
 # Install any needed packages specified in requirements.txt
