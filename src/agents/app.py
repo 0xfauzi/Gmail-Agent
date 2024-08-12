@@ -26,9 +26,9 @@ db = firestore.Client()
 PROJECT_ID = os.environ.get('PROJECT_ID')
 SECRET_ID = os.environ.get('SECRET_ID')
 
-def access_secret_version(version_id="latest"):
+def access_secret_version(secret_id, version_id="latest"):
     client = secretmanager.SecretManagerServiceClient()
-    name = f"projects/{PROJECT_ID}/secrets/{SECRET_ID}/versions/{version_id}"
+    name = f"projects/{PROJECT_ID}/secrets/{secret_id}/versions/{version_id}"
     response = client.access_secret_version(request={"name": name})
     return response.payload.data.decode('UTF-8')
 
@@ -38,7 +38,7 @@ ANTHROPIC_API_KEY = access_secret_version('ANTHROPIC_API_KEY')
 openai_llm = OpenAI(api_key=OPENAI_API_KEY)
 
 def get_gmail_service(user_email):
-    service_account_info = json.loads(access_secret_version())
+    service_account_info = json.loads(access_secret_version(SECRET_ID))
     credentials = service_account.Credentials.from_service_account_info(
         service_account_info,
         scopes=['https://www.googleapis.com/auth/gmail.send']
