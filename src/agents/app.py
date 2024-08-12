@@ -39,9 +39,6 @@ async def get_gmail_service(user_email):
     delegated_credentials = credentials.with_subject(user_email)
     return await asyncio.to_thread(build, 'gmail', 'v1', credentials=delegated_credentials)
 
-@app.route('/health', methods=['GET'])
-def health_check():
-    return jsonify({"status": "healthy"}), 200
 
 @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=4, max=10))
 async def process_email(email_data):
@@ -111,6 +108,10 @@ async def send_email(user_email, to_email, subject, content):
         logger.info(f"Response email sent. Message Id: {sent_message['id']}")
     except Exception as e:
         logger.error(f"An error occurred while sending email: {e}")
+
+@app.route('/health', methods=['GET'])
+def health_check():
+    return jsonify({"status": "healthy"}), 200
 
 @app.route('/', methods=['POST'])
 async def process_email():
