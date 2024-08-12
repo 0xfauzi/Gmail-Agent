@@ -92,9 +92,9 @@ def process_email_data(email_data):
 
         # Create the AIResearchCrew instance with the email details
         crew = AIResearchCrew(
-            subject=email_data['subject'],
-            body=email_data['body'],
-            sender=email_data['from']
+            email_subject=email_data['subject'],
+            email_body=email_data['body'],
+            email_from=email_data['from']
         )
         result = crew.run()
         logger.info(f"Result: {result}")
