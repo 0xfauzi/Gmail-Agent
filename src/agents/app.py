@@ -8,7 +8,7 @@ from google.cloud import secretmanager
 import json
 import sys
 from cloud_logging_helper import setup_logging
-from crews.ai_research_crew import AIResearchCrew
+from crews.ai_research_crew.research_crew import AIResearchCrew
 
 app = Flask(__name__)
 
