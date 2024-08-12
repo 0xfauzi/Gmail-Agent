@@ -36,7 +36,6 @@ def access_secret_version(secret_id, version_id="latest"):
 OPENAI_API_KEY = access_secret_version('OPENAI_API_KEY')
 ANTHROPIC_API_KEY = access_secret_version('ANTHROPIC_API_KEY')
 
-openai_llm = OpenAI(api_key=OPENAI_API_KEY)
 
 def get_gmail_service(user_email):
     service_account_info = json.loads(access_secret_version(SECRET_ID))
